@@ -1,0 +1,30 @@
+{
+  "name": "genesys-ex-client-examples",
+  "version": "1.0.0",
+  "description": "Genesys Cloud EX example code",
+  "dependencies": {
+    "archiver": "^5.3.1",
+    "child_process": "^1.0.2",
+    "dotenv": "^16.0.1",
+    "fs": "0.0.1-security",
+    "lodash": "^4.17.21",
+    "md5-file": "^5.0.0",
+    "node-fetch": "^2.6.7",
+    "node-forge": "^1.3.1",
+    "purecloud-platform-client-v2": "^150.0.0",
+    "winston": "^3.6.0",
+    "ws": "^8.18.0"
+  },
+  "scripts": {
+    "start:survey": "node api-sample/oauth.js",
+    "start:chat": "node api-sample/chatsample.js",
+    "start:messagesample": "node api-sample/messagesample.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnsontsegenesys/wem-504.git"
+  },
+  "author": "Genesys",
+  "license": "MIT"
+}
