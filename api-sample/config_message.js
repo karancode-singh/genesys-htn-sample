@@ -11,7 +11,7 @@ dotenv.config();
 
 const clientId = process.env.GENESYS_CLOUD_CLIENT_ID;
 const clientSecret = process.env.GENESYS_CLOUD_CLIENT_SECRET;
-const DIVISION = "RUWAZEPZLVUB";
+const DIVISION = process.env.DIVISION;
 const MESSENGER_CONFIG_ID = "b3732897-7715-4f53-ac26-469cad324256";
 const MESSENGER_CONFIG_VERSION = "1";
 

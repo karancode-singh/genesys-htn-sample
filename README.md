@@ -4,7 +4,7 @@ Pre-requisite
 --------------
 * Install node.js on your system, if not installed already
 * Run `npm install` at the root directory where the package.json resides. Remove `package-lock.json` and try again if facing errors
-* Update GENESYS_CLOUD_CLIENT_ID and GENESYS_CLOUD_CLIENT_SECRET environment variables with the oauth credentials that is provided to you.  It is being used in the api-sample/oauth.js file
+* Update GENESYS_CLOUD_CLIENT_ID, GENESYS_CLOUD_CLIENT_SECRET and DIVISION environment variables with the oauth credentials and division code that is provided to you.
 
 Running the program
 -------------------
