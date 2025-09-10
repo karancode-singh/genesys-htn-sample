@@ -5,6 +5,7 @@ const fetch = require('node-fetch');
 const platformClient = require('purecloud-platform-client-v2');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const readline = require('readline');
 
 dotenv.config();
 
@@ -13,13 +14,25 @@ const clientSecret = process.env.GENESYS_CLOUD_CLIENT_SECRET;
 const DIVISION = "RUWAZEPZLVUB";
 const MESSENGER_CONFIG_ID = "b3732897-7715-4f53-ac26-469cad324256";
 const MESSENGER_CONFIG_VERSION = "1";
-const userId = "04a98822-f4cc-4822-aa55-e49618f282c6";
-console.log('Client ID:', clientId);
-console.log('Client Secret:', clientSecret ? '[REDACTED]' : 'Not found');
 
 // Use the same environment as the existing oauth.js file
 const environment = platformClient.PureCloudRegionHosts.ca_central_1;
 let creds = null;
+
+// Function to prompt user and wait for return key
+function waitForUserInput(message) {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        
+        rl.question(message, () => {
+            rl.close();
+            resolve();
+        });
+    });
+}
 
 // Initialize the process
 try {
@@ -31,7 +44,7 @@ try {
             try {
                 creds = JSON.parse(jsonString);
                 console.log(`Using cached token: ${creds.access_token.substring(0, 20)}...`);
-                getDivisionInformation();
+                driver();
             } catch (err) {
                 console.log("Error parsing JSON string:", err);
                 fetchToken();
@@ -82,7 +95,7 @@ function fetchToken() {
         console.log(`Authentication successful. Token acquired.`);
         creds = jsonResponse;
         saveToken(jsonResponse);
-        getDivisionInformation();
+        driver();
     })
     .catch(e => console.error('Token fetch error:', e));
 }
@@ -384,12 +397,12 @@ function addUserToQueue(queueId, userId) {
     });
 }
 
-// Get or create an Architect flow for the messenger deployment
-async function getOrCreateFlow(divisionInfo) {
+// Get Architect flow for the messenger deployment
+async function getFlow() {
     const flowName = "Flow" + DIVISION;
     console.log(`\nLooking for flow: "${flowName}"`);
     
-    // First, try to get existing flow
+    // Get existing flow
     const getUrl = `https://api.${environment}/api/v2/flows?name=${encodeURIComponent(flowName)}&type=inboundshortmessage`;
     const getOptions = {
         method: 'GET',
@@ -422,7 +435,7 @@ async function createMessengerDeployment(divisionInfo) {
     
     try {
         // Get or create the flow
-        const flow = await getOrCreateFlow(divisionInfo);
+        const flow = await getFlow();
         
         // Create the deployment
         const deploymentName = "Dep" + DIVISION;
@@ -479,13 +492,13 @@ async function createMessengerDeployment(divisionInfo) {
     }
 }
 
-// Main function to get division information, create queue, and add user
-async function getDivisionInformation() {
+// Main function to get division information, create queue, add user to queue, create messenger deployment
+async function driver() {
     console.log('\n=== Getting Division Information, Creating Queue & Adding User ===\n');
     
     try {
         // Get current user info first
-        // const currentUser = await getCurrentUser();
+        const currentUser = await getCurrentUser();
         
         console.log('\n' + '='.repeat(50) + '\n');
         
@@ -532,8 +545,12 @@ async function getDivisionInformation() {
                 console.log('\n' + '='.repeat(50) + '\n');
                 
                 try {
-                    await addUserToQueue(queue.id, userId);
-                    console.log(`✅ User ${userId} has been added to queue "${queue.name}" (${queue.id})`);
+                    await addUserToQueue(queue.id, currentUser.id);
+                    console.log(`✅ User ${currentUser.id} has been added to queue "${queue.name}" (${queue.id})`);
+                    
+                    // Wait for user to setup flow in architect
+                    console.log('\n' + '='.repeat(50) + '\n');
+                    await waitForUserInput(`Press return key once you have setup flow "Flow${DIVISION}" in architect (see readme): `);
                     
                     // Create messenger deployment after user is added to queue
                     console.log('\n' + '='.repeat(50) + '\n');
@@ -566,6 +583,6 @@ async function getDivisionInformation() {
         }
         
     } catch (error) {
-        console.error('❌ Error in getDivisionInformation:', error);
+        console.error('❌ Error in driver:', error);
     }
 }

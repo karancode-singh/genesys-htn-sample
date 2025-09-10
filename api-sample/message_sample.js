@@ -122,7 +122,7 @@ async function startMessageSession() {
         });
         
         messageRl.on('close', () => {
-            console.log('\nAdd wrap-up logic here');
+            console.log('\nEnd and wrap-up the interaction from the UI');
             process.exit(0);
         });
         
