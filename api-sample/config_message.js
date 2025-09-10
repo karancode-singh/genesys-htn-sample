@@ -429,6 +429,58 @@ async function getFlow() {
     }
 }
 
+// Get existing messenger deployment by name if it already exists
+async function getExistingMessengerDeployment() {
+    const deploymentName = "Dep" + DIVISION;
+    console.log(`\nLooking for existing messenger deployment: "${deploymentName}"`);
+    
+    const url = `https://api.${environment}/api/v2/webdeployments/deployments`;
+    const options = {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${creds.token_type} ${creds.access_token}`
+        }
+    };
+    
+    console.log('Get Messenger Deployments Request URL:', url);
+    
+    try {
+        const response = await fetch(url, options);
+        if (response.ok) {
+            const deploymentsResponse = await response.json();
+            if (deploymentsResponse.entities && deploymentsResponse.entities.length > 0) {
+                const existingDeployment = deploymentsResponse.entities.find(deployment => 
+                    deployment.name === deploymentName
+                );
+                
+                if (existingDeployment) {
+                    console.log(`✅ Found existing messenger deployment: "${deploymentName}" (ID: ${existingDeployment.id})`);
+                    return existingDeployment;
+                } else {
+                    console.log(`ℹ️  Messenger deployment "${deploymentName}" not found.`);
+                    return null;
+                }
+            } else {
+                console.log(`ℹ️  No messenger deployments found.`);
+                return null;
+            }
+        } else if (response.status === 401) {
+            console.log('Token expired, fetching new token...');
+            fetchToken();
+            throw Error('Token expired');
+        } else {
+            const errorText = await response.text();
+            throw Error(`HTTP ${response.status}: ${errorText}`);
+        }
+    } catch (error) {
+        if (error.message !== 'Token expired') {
+            console.error('❌ Error getting messenger deployments:', error.message);
+        }
+        throw error;
+    }
+}
+
 // Create messenger deployment
 async function createMessengerDeployment(divisionInfo) {
     console.log(`\nCreating messenger deployment for division: ${divisionInfo.name}`);
@@ -554,16 +606,49 @@ async function driver() {
                     
                     // Create messenger deployment after user is added to queue
                     console.log('\n' + '='.repeat(50) + '\n');
-                    console.log('🚀 Creating messenger deployment...');
+                    console.log('🚀 Checking for existing messenger deployment...');
                     
+                    let deployment = null;
+                    
+                    // Try to get existing messenger deployment first
                     try {
-                        await createMessengerDeployment(targetDivision);
+                        deployment = await getExistingMessengerDeployment();
+                    } catch (getDeploymentError) {
+                        if (getDeploymentError.message !== 'Token expired') {
+                            console.log('⚠️  Error checking for existing messenger deployment, will try to create new one.');
+                        }
+                    }
+                    
+                    // If deployment doesn't exist, create it
+                    if (!deployment) {
+                        try {
+                            console.log('📝 Creating new messenger deployment...');
+                            deployment = await createMessengerDeployment(targetDivision);
+                            console.log('\n🎉 Complete process finished successfully!');
+                            console.log('✅ User added to queue and messenger deployment created!');
+                        } catch (deploymentError) {
+                            if (deploymentError.message !== 'Token expired') {
+                                console.error('❌ Error creating messenger deployment:', deploymentError.message);
+                                console.log('⚠️  User was added to queue successfully, but messenger deployment failed.');
+                            }
+                        }
+                    } else {
                         console.log('\n🎉 Complete process finished successfully!');
-                        console.log('✅ User added to queue and messenger deployment created!');
-                    } catch (deploymentError) {
-                        if (deploymentError.message !== 'Token expired') {
-                            console.error('❌ Error creating messenger deployment:', deploymentError.message);
-                            console.log('⚠️  User was added to queue successfully, but messenger deployment failed.');
+                        console.log('✅ User added to queue and existing messenger deployment found!');
+                        console.log('Deployment Details:');
+                        console.log(`- Name: ${deployment.name}`);
+                        console.log(`- ID: ${deployment.id}`);
+                        if (deployment.allowAllDomains !== undefined) {
+                            console.log(`- Allow All Domains: ${deployment.allowAllDomains}`);
+                        }
+                        if (deployment.configuration && deployment.configuration.id) {
+                            console.log(`- Configuration ID: ${deployment.configuration.id}`);
+                        }
+                        if (deployment.flow && deployment.flow.id) {
+                            console.log(`- Flow ID: ${deployment.flow.id}`);
+                        }
+                        if (deployment.dateCreated) {
+                            console.log(`- Created: ${new Date(deployment.dateCreated).toLocaleString()}`);
                         }
                     }
                 } catch (addUserError) {
