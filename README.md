@@ -18,6 +18,13 @@ Setting up messenger configuration
 * Create a new "Inbound Message" flow in Architect named "Flow<DIVISION>". Set it up to transfer to ACD on the queue that was created by the script. Publish it.
 * Press return key to continue setup
 
+Messenger testing tool
+----------------------
+* open https://developer.genesys.cloud/devapps/web-messenger
+* select deployment
+* start chat
+Note: you need to be on queue to chat as an agent from Genesys Cloud UI
+
 Troubleshooting
 ---------------
 * If facing 4xx errors with API calls, login in to your Genesys Cloud account, issue `localStorage.getItem("pc_auth")` command in the console of dev tools of the browser, copy over `access_token` into auth.json file, and try again. If still facing issues, you might lack permissions to perform the action and can reach out to us.
