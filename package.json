@@ -16,9 +16,10 @@
     "ws": "^8.18.0"
   },
   "scripts": {
-    "start:survey": "node api-sample/oauth.js",
-    "start:chat": "node api-sample/chatsample.js",
-    "start:messagesample": "node api-sample/messagesample.js",
+    "start:survey": "node api-sample/survey_sample.js",
+    "start:chat": "node api-sample/chat_sample.js",
+    "start:config_message": "node api-sample/config_message.js",
+    "start:message": "node api-sample/message_sample.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

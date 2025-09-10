@@ -11,6 +11,8 @@ dotenv.config();
 const clientId = process.env.GENESYS_CLOUD_CLIENT_ID;
 const clientSecret = process.env.GENESYS_CLOUD_CLIENT_SECRET;
 const DIVISION = "RUWAZEPZLVUB";
+const MESSENGER_CONFIG_ID = "b3732897-7715-4f53-ac26-469cad324256";
+const MESSENGER_CONFIG_VERSION = "1";
 const userId = "04a98822-f4cc-4822-aa55-e49618f282c6";
 console.log('Client ID:', clientId);
 console.log('Client Secret:', clientSecret ? '[REDACTED]' : 'Not found');
@@ -126,7 +128,7 @@ function getCurrentUser() {
     })
     .catch(e => {
         if (e.message !== 'Token expired') {
-            console.error('Error getting current user:', e);
+            console.error('❌ Error getting current user:', e);
         }
         throw e;
     });
@@ -382,6 +384,101 @@ function addUserToQueue(queueId, userId) {
     });
 }
 
+// Get or create an Architect flow for the messenger deployment
+async function getOrCreateFlow(divisionInfo) {
+    const flowName = "Flow" + DIVISION;
+    console.log(`\nLooking for flow: "${flowName}"`);
+    
+    // First, try to get existing flow
+    const getUrl = `https://api.${environment}/api/v2/flows?name=${encodeURIComponent(flowName)}&type=inboundshortmessage`;
+    const getOptions = {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${creds.token_type} ${creds.access_token}`
+        }
+    };
+    
+    try {
+        const response = await fetch(getUrl, getOptions);
+        if (response.ok) {
+            const flowsResponse = await response.json();
+            if (flowsResponse.entities && flowsResponse.entities.length > 0) {
+                const existingFlow = flowsResponse.entities.find(flow => flow.name === flowName);
+                if (existingFlow) {
+                    console.log(`✅ Found existing flow: "${flowName}" (ID: ${existingFlow.id})`);
+                    return existingFlow;
+                }
+            }
+        }
+    } catch (error) {
+        console.log('⚠️  Error checking for existing flow, will try to create new one.');
+    }
+}
+
+// Create messenger deployment
+async function createMessengerDeployment(divisionInfo) {
+    console.log(`\nCreating messenger deployment for division: ${divisionInfo.name}`);
+    
+    try {
+        // Get or create the flow
+        const flow = await getOrCreateFlow(divisionInfo);
+        
+        // Create the deployment
+        const deploymentName = "Dep" + DIVISION;
+        console.log(`\nCreating messenger deployment: "${deploymentName}"`);
+        
+        const url = `https://api.${environment}/api/v2/webdeployments/deployments`;
+        const deploymentBody = {
+            name: deploymentName,
+            description: `Messenger deployment for division ${divisionInfo.name}`,
+            allowAllDomains: true,
+            configuration: {
+                id: MESSENGER_CONFIG_ID,
+                version: MESSENGER_CONFIG_VERSION || "1"
+            },
+            flow: {
+                id: flow.id
+            }
+        };
+        
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `${creds.token_type} ${creds.access_token}`
+            },
+            body: JSON.stringify(deploymentBody)
+        };
+        
+        console.log('Creating deployment with URL:', url);
+        console.log('Deployment Body:', JSON.stringify(deploymentBody, null, 2));
+        
+        const response = await fetch(url, options);
+        if (response.ok) {
+            const deployment = await response.json();
+            console.log('\n✅ Messenger Deployment Created Successfully!');
+            console.log('Deployment Details:');
+            console.log(`- Name: ${deployment.name}`);
+            console.log(`- ID: ${deployment.id}`);
+            console.log(`- Allow All Domains: ${deployment.allowAllDomains}`);
+            console.log(`- Configuration ID: ${deployment.configuration.id}`);
+            console.log(`- Flow ID: ${deployment.flow.id}`);
+            if (deployment.dateCreated) {
+                console.log(`- Created: ${new Date(deployment.dateCreated).toLocaleString()}`);
+            }
+            return deployment;
+        } else {
+            const errorText = await response.text();
+            throw new Error(`Failed to create messenger deployment: ${response.status} - ${errorText}`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error in createMessengerDeployment:', error.message);
+        throw error;
+    }
+}
+
 // Main function to get division information, create queue, and add user
 async function getDivisionInformation() {
     console.log('\n=== Getting Division Information, Creating Queue & Adding User ===\n');
@@ -436,8 +533,22 @@ async function getDivisionInformation() {
                 
                 try {
                     await addUserToQueue(queue.id, userId);
-                    console.log('\n🎉 Process completed successfully!');
                     console.log(`✅ User ${userId} has been added to queue "${queue.name}" (${queue.id})`);
+                    
+                    // Create messenger deployment after user is added to queue
+                    console.log('\n' + '='.repeat(50) + '\n');
+                    console.log('🚀 Creating messenger deployment...');
+                    
+                    try {
+                        await createMessengerDeployment(targetDivision);
+                        console.log('\n🎉 Complete process finished successfully!');
+                        console.log('✅ User added to queue and messenger deployment created!');
+                    } catch (deploymentError) {
+                        if (deploymentError.message !== 'Token expired') {
+                            console.error('❌ Error creating messenger deployment:', deploymentError.message);
+                            console.log('⚠️  User was added to queue successfully, but messenger deployment failed.');
+                        }
+                    }
                 } catch (addUserError) {
                     if (addUserError.message !== 'Token expired') {
                         console.error('❌ Error adding user to queue:', addUserError.message);
