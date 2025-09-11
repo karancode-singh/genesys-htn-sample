@@ -1,5 +1,10 @@
-Thank you for your interest in Genesys at Hack the North! This project serves to demonstrate how to access and use Genesys' Public API.
+Thank you for your interest in Genesys at Hack the North! This sample project serves to demonstrate how to access and use some of the endpoints in Genesys' Public API.
+While this project focuses on creating surveys and sending chat messages, [Public API](https://developer.genesys.cloud/devapps/api-explorer) is home to an deep wealth of endpoints, including analytics for speech/text/sentiments, as well as functions for workforce engagement, including gamification, employee recognition, and coaching. Feel free to explore the available endpoints and find what you need for your own project!
 If you have any questions or run into any issues, please reach out to us on the Genesys Slack channel, or visit our booth in the sponsor bay.
+
+Useful Links
+--------------
+* 
 
 Pre-requisites
 --------------
