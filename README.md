@@ -66,11 +66,12 @@ Starting a Message Chat
       
 Troubleshooting
 ---------------
-* 400: Bad Request
+* 4xx errors (like 400:Bad Request)
   * If facing 4xx errors with API calls, you may need to acquire a different token.
   * [Login](https://login.cac1.pure.cloud/) to your Genesys Cloud account and open the browser's web tools.
   * Navigate to the console tab, and enter the command `localStorage.getItem("pc_auth")` (You may have to manually enter it or allow pasting).
   * In this project's auth.json file (created when making an API request), replace the value of the attribute `access_token` with the one found in the web tools console.
   * Try the request/command again.
-* Unable to perform the requested action. You are missing the following permission(s)...
-  * The default permissions provided for hacker accounts may be insufficient for what is being attepmted. Reach out to a Genesys employee for assistance.
+  * Note: Sometimes, the error might indicate that permissions are missing. Even in such cases this token might solve the issue.
+* Got the new token and still get "Unable to perform the requested action. You are missing the following permission(s)..." error?
+  * The default permissions provided for hacker accounts may be insufficient for what is being attepmted. Reach out to us for assistance.
